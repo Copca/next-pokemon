@@ -9,6 +9,7 @@ import { FavoritesPokemons } from '../../components/pokemon';
 const Favorites: NextPage = () => {
 	const [favoritesPokemon, setFavoritesPokemon] = useState<number[]>([]);
 
+	// Obtemos los el arreglo de los pokemones guardado en LocalStorage
 	useEffect(() => {
 		setFavoritesPokemon(localFavorites.pokemons());
 	}, []);

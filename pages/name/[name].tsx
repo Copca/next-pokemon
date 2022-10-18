@@ -1,3 +1,5 @@
+// * Ejemplo de SSG (Static Site Generation con ISR (Incremental Static Regeneration), habiltiando la propiedad "revalidate" de los Props dentro de la funcion getStaticProps )
+
 import { useEffect, useState } from 'react';
 import { GetStaticPaths, GetStaticProps, NextPage } from 'next';
 import Image from 'next/image';
@@ -16,7 +18,7 @@ const PokemonByNamePage: NextPage<Props> = ({ pokemon }) => {
 	const [isInFavorites, setIsInFavorites] = useState(false);
 
 	useEffect(() => {
-		// Guardamos en la variable de estado si el pokemon esta en LocalStorage
+		// Guardamos en la variable de estado si el pokemon esta en (favoritos) LocalStorage
 		setIsInFavorites(localFavorites.existInFavorites(pokemon.id));
 	}, [pokemon.id]);
 
@@ -124,19 +126,34 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
 		paths: data.results.map(({ name }) => ({
 			params: { name }
 		})),
-		fallback: false //'blocking' ->permite entrar a la pagina, false redirecciona a pagina 404 si el param no esta incluido en el arreglo path
+		fallback: 'blocking' //'blocking' ->permite entrar a la pagina, false -> redirecciona a pagina 404 si el param no esta incluido en el arreglo path
 	};
 };
+
+// ? Como habilitamos el fallback: 'blocking, debemos validamos que el param escrito en la url sea permitido
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
 	const { name } = params as { name: string };
 
+	// la validación se hace con un trycatch dentro de esta función
 	const pokemon = await getPokemonInfo(name);
+
+	// Si no existe el pokemon, redireccionamos
+	if (!pokemon) {
+		return {
+			redirect: {
+				destination: '/',
+				permanent: false // true -> los boots de google nunca indexarán esa url que falló,
+				// false -> puede que en un futuro esa url si exista y pueda ser indexada
+			}
+		};
+	}
 
 	return {
 		props: {
 			pokemon
-		}
+		},
+		revalidate: 86400 // 846400 seg -> 24 hrs // * Habilita el ISR (Incremental Static Regeneration)
 	};
 };
 
